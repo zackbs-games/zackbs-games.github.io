@@ -1,0 +1,13 @@
+body {
+  margin: 0;
+  background: #1a1a2e;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+}
+#game-canvas {
+  display: block;
+  image-rendering: pixelated;
+}

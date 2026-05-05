@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pikixamon</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="hud">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+      <h1 style="margin:0">Pikixamon</h1>
+      <a href="/" style="
+        background:rgba(255,255,255,0.07);
+        border:1px solid rgba(255,255,255,0.15);
+        color:#c8ddf5;font-family:Inter,system-ui,sans-serif;
+        font-size:0.75rem;font-weight:700;
+        padding:0.3rem 0.75rem;border-radius:7px;
+        text-decoration:none;white-space:nowrap;
+        transition:background 0.2s;
+      " onmouseover="this.style.background='rgba(255,255,255,0.14)'"
+         onmouseout="this.style.background='rgba(255,255,255,0.07)'">
+        ← Games
+      </a>
+    </div>
+    <div class="controls">
+      <span>WASD = move</span>
+      <span>Arrow keys = turn</span>
+      <span>B = battle</span>
+      <span>I = inventory</span>
+      <span>LMB = mine</span>
+      <span>RMB = place</span>
+      <span>1–0 / scroll = select slot</span>
+    </div>
+    <div id="info">Loading WebGPU...</div>
+    <div id="battle" class="hidden">
+      <h2>Battle</h2>
+      <div class="battle-hp-row">
+        <span id="enemy-name-label">?</span>
+        <div class="hp-bar-bg"><div id="enemy-hp-bar" class="hp-bar-fill"></div></div>
+        <span id="enemy-hp-label">--/--</span>
+      </div>
+      <p id="battle-text"></p>
+      <div class="battle-buttons">
+        <button id="fightBtn">Fight</button>
+        <button id="catchBtn">Catch</button>
+        <button id="runBtn">Run</button>
+      </div>
+    </div>
+    <div id="party-panel">
+      <h3>Party</h3>
+      <div id="party-list"></div>
+    </div>
+    <div id="debugConsole" class="debug-console"></div>
+  </div>
+  <div id="inv-panel" class="hidden">
+    <h2>Inventory</h2>
+    <div id="inv-hotbar-row"></div>
+    <div id="inv-item-list"></div>
+    <h3 class="inv-section-title">Crafting</h3>
+    <div id="inv-recipe-list"></div>
+    <p id="craft-msg"></p>
+    <button id="craft-close">Close (I)</button>
+  </div>
+  <canvas id="gfx"></canvas>
+  <canvas id="overlay"></canvas>
+  <div id="crosshair"></div>
+  <div id="hotbar"></div>
+  <script type="module" src="main.js?cb=4"></script>
+</body>
+</html>
