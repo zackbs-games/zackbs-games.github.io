@@ -1,13 +1,110 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
 body {
-  margin: 0;
   background: #1a1a2e;
   overflow: hidden;
+  height: 100vh;
+  height: 100dvh;
+}
+
+#game-canvas {
+  display: block;
+  position: absolute;
+  transform-origin: top left;
+  image-rendering: pixelated;
+}
+
+/* Portrait: show rotate prompt */
+#rotate-msg {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: #1a1a2e;
+  z-index: 10000;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-family: 'Courier New', monospace;
+  font-size: 1.2rem;
+  text-align: center;
+  gap: 1.2rem;
+}
+.rotate-icon {
+  font-size: 3rem;
+  animation: tilt 1s ease-in-out infinite alternate;
+}
+@keyframes tilt {
+  from { transform: rotate(0deg);  }
+  to   { transform: rotate(90deg); }
+}
+@media (orientation: portrait) {
+  #rotate-msg { display: flex; }
+}
+
+/* Touch controls — only shown on touch devices */
+#touch-pad {
+  display: none;
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  height: 90px;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 0 16px 14px;
+  pointer-events: none;
+  z-index: 200;
+}
+@media (pointer: coarse) {
+  #touch-pad { display: flex; }
+}
+
+.t-left, .t-right {
+  display: flex;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+.t-btn {
+  width: 64px;
+  height: 64px;
+  background: rgba(255,255,255,0.13);
+  border: 2px solid rgba(255,255,255,0.28);
+  border-radius: 14px;
+  color: #fff;
+  font-size: 1.4rem;
+  font-weight: bold;
+  font-family: 'Courier New', monospace;
+  cursor: pointer;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 100vh;
 }
-#game-canvas {
-  display: block;
-  image-rendering: pixelated;
+.t-btn:active {
+  background: rgba(255,255,255,0.28);
+  transform: scale(0.92);
+}
+
+.t-jump {
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  background: rgba(80,200,80,0.18);
+  border-color: rgba(80,200,80,0.45);
+}
+.t-punch {
+  font-size: 0.7rem;
+  background: rgba(255,160,40,0.18);
+  border-color: rgba(255,160,40,0.45);
+}
+.t-snow {
+  font-size: 0.7rem;
+  background: rgba(100,180,255,0.18);
+  border-color: rgba(100,180,255,0.45);
+}
+.t-blizzard {
+  font-size: 0.85rem;
+  background: rgba(140,80,255,0.18);
+  border-color: rgba(140,80,255,0.45);
 }

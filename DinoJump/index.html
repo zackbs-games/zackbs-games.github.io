@@ -2,11 +2,17 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Dino Jump</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+
+  <div id="rotate-msg">
+    <div class="rotate-icon">📱</div>
+    <p>Rotate your phone<br>to play!</p>
+  </div>
+
   <a href="/" style="
     position:fixed;top:12px;left:12px;
     background:rgba(8,12,30,0.88);
@@ -24,11 +30,40 @@
 
   <canvas id="game-canvas"></canvas>
 
-  <div id="no-webgpu" style="display:none; color:white; font-family:monospace;
-    font-size:1.2rem; text-align:center; padding:4rem;">
-    Canvas 2D not supported in this browser.
+  <div id="touch-pad">
+    <div class="t-left">
+      <button class="t-btn" id="tb-left">◀</button>
+      <button class="t-btn" id="tb-right">▶</button>
+    </div>
+    <div class="t-right">
+      <button class="t-btn t-jump" id="tb-jump">JUMP</button>
+    </div>
   </div>
 
   <script type="module" src="main.js"></script>
+  <script>
+    const NW = 1280, NH = 480;
+    function scaleGame() {
+      const s = Math.min(innerWidth / NW, innerHeight / NH);
+      const c = document.getElementById('game-canvas');
+      c.style.transform = `scale(${s})`;
+      c.style.left = Math.round((innerWidth  - NW * s) / 2) + 'px';
+      c.style.top  = Math.round((innerHeight - NH * s) / 2) + 'px';
+    }
+    window.addEventListener('resize', scaleGame);
+    window.addEventListener('load',   scaleGame);
+
+    function wireBtn(id, code) {
+      const el = document.getElementById(id);
+      const dn = () => window.dispatchEvent(new KeyboardEvent('keydown', { code, bubbles: true }));
+      const up = () => window.dispatchEvent(new KeyboardEvent('keyup',   { code, bubbles: true }));
+      el.addEventListener('touchstart',  e => { e.preventDefault(); dn(); }, { passive: false });
+      el.addEventListener('touchend',    e => { e.preventDefault(); up(); }, { passive: false });
+      el.addEventListener('touchcancel', e => { e.preventDefault(); up(); }, { passive: false });
+    }
+    wireBtn('tb-left',  'ArrowLeft');
+    wireBtn('tb-right', 'ArrowRight');
+    wireBtn('tb-jump',  'Space');
+  </script>
 </body>
 </html>

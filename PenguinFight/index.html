@@ -2,11 +2,17 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Penguin Fight</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+
+  <div id="rotate-msg">
+    <div class="rotate-icon">📱</div>
+    <p>Rotate your phone<br>to play!</p>
+  </div>
+
   <a href="/" style="
     position:fixed;top:12px;left:12px;
     background:rgba(8,12,30,0.88);
@@ -16,11 +22,54 @@
     font-size:0.78rem;font-weight:700;
     padding:0.45rem 0.95rem;border-radius:8px;
     text-decoration:none;z-index:9999;
+    transition:background 0.2s,border-color 0.2s;
   " onmouseover="this.style.background='rgba(30,40,80,0.95)';this.style.borderColor='rgba(74,158,255,0.65)'"
      onmouseout="this.style.background='rgba(8,12,30,0.88)';this.style.borderColor='rgba(74,158,255,0.35)'">
     ← Back to Games
   </a>
+
   <canvas id="game-canvas"></canvas>
+
+  <div id="touch-pad">
+    <div class="t-left">
+      <button class="t-btn" id="tb-left">◀</button>
+      <button class="t-btn" id="tb-right">▶</button>
+    </div>
+    <div class="t-right">
+      <button class="t-btn t-jump"     id="tb-jump">JUMP</button>
+      <button class="t-btn t-punch"    id="tb-punch">PUNCH</button>
+      <button class="t-btn t-snow"     id="tb-snow">❄BALL</button>
+      <button class="t-btn t-blizzard" id="tb-blizzard">❄❄❄</button>
+    </div>
+  </div>
+
   <script type="module" src="main.js"></script>
+  <script>
+    const NW = 960, NH = 400;
+    function scaleGame() {
+      const s = Math.min(innerWidth / NW, innerHeight / NH);
+      const c = document.getElementById('game-canvas');
+      c.style.transform = `scale(${s})`;
+      c.style.left = Math.round((innerWidth  - NW * s) / 2) + 'px';
+      c.style.top  = Math.round((innerHeight - NH * s) / 2) + 'px';
+    }
+    window.addEventListener('resize', scaleGame);
+    window.addEventListener('load',   scaleGame);
+
+    function wireBtn(id, code) {
+      const el = document.getElementById(id);
+      const dn = () => window.dispatchEvent(new KeyboardEvent('keydown', { code, bubbles: true }));
+      const up = () => window.dispatchEvent(new KeyboardEvent('keyup',   { code, bubbles: true }));
+      el.addEventListener('touchstart',  e => { e.preventDefault(); dn(); }, { passive: false });
+      el.addEventListener('touchend',    e => { e.preventDefault(); up(); }, { passive: false });
+      el.addEventListener('touchcancel', e => { e.preventDefault(); up(); }, { passive: false });
+    }
+    wireBtn('tb-left',     'ArrowLeft');
+    wireBtn('tb-right',    'ArrowRight');
+    wireBtn('tb-jump',     'Space');
+    wireBtn('tb-punch',    'KeyZ');
+    wireBtn('tb-snow',     'KeyX');
+    wireBtn('tb-blizzard', 'KeyQ');
+  </script>
 </body>
 </html>
