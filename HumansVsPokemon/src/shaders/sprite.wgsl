@@ -45,7 +45,8 @@ fn vs_main(vert: VertexInput, inst: InstanceInput) -> VaryingOutput {
     1.0 - (worldPos.y / uniforms.viewSize.y) * 2.0
   );
   out.clipPos = vec4f(clip, 0.0, 1.0);
-  out.uv = inst.uvOffset + vert.uv * inst.uvSize;
+  // Flip UV Y: quad localY=+0.5 is screen-bottom but vert.uv.y=0 there, so invert
+  out.uv = inst.uvOffset + vec2f(vert.uv.x, 1.0 - vert.uv.y) * inst.uvSize;
   out.tint = inst.tint;
   return out;
 }
