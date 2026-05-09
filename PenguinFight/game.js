@@ -84,7 +84,7 @@ export class Game {
     this.mobs         = [];
     this.projectiles  = [];
     this._state           = 'playing';
-    this._blizzardCharges = 10;
+    this._blizzardCharges = 5;
     this._blizzardCooldown = 0;
     this._waveIdx     = 0;
     this._waveTimer   = 0;
