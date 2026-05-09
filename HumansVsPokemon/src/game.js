@@ -188,13 +188,14 @@ export class Game {
     this.audio.resume();   // unlock AudioContext on first gesture
 
     // Berry pickup first (works in all non-menu modes)
-    for (const b of this.berryPickups) {
-      if (!b.collected && Math.abs(wx - b.x) < b.w && Math.abs(wy - b.y) < b.h) {
-        b.collected = true;
-        this.berries += b.value;
-        this.audio.berry();
-        return;
+    // Clicking any berry collects all berries on screen
+    const hitBerry = this.berryPickups.find(b => !b.collected && Math.abs(wx - b.x) < b.w && Math.abs(wy - b.y) < b.h);
+    if (hitBerry) {
+      for (const b of this.berryPickups) {
+        if (!b.collected) { b.collected = true; this.berries += b.value; }
       }
+      this.audio.berry();
+      return;
     }
 
     // Shovel button toggle
