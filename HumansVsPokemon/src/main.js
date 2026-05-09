@@ -36,8 +36,8 @@ async function main() {
 
   // Load real Pokémon sprites — non-blocking, game falls back to coloured rects
   // until atlas arrives (typically < 1 s on a good connection).
-  buildSpriteAtlas().then(({ imageBitmap, uvMap }) => {
-    renderer.loadAtlas(imageBitmap);
+  buildSpriteAtlas().then(({ imageBitmap, uvMap, whiteUV }) => {
+    renderer.loadAtlas(imageBitmap, whiteUV);
     setSpriteUVs(uvMap);
   }).catch(err => console.warn('Sprite atlas failed to load:', err));
 

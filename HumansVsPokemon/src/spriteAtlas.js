@@ -22,8 +22,8 @@ const POKEMON_IDS = {
 
 const COLS = SPECIES_ORDER.length; // 8
 const ROWS = 3;
-const ATLAS_W = COLS * SPRITE_SIZE; // 768
-const ATLAS_H = ROWS * SPRITE_SIZE; // 288
+const ATLAS_W = COLS * SPRITE_SIZE + 1; // 769 (+1 for white pixel column)
+const ATLAS_H = ROWS * SPRITE_SIZE;     // 288
 
 function spriteUrl(id) {
   return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`;
@@ -73,6 +73,12 @@ export async function buildSpriteAtlas() {
   }
 
   await Promise.all(loads);
+
+  // White pixel column at x = COLS*SPRITE_SIZE — used by drawRect to get solid tint
+  ctx.fillStyle = 'white';
+  ctx.fillRect(COLS * SPRITE_SIZE, 0, 1, ATLAS_H);
+  const whiteUV = { uvX: (COLS * SPRITE_SIZE) / ATLAS_W, uvY: 0, uvW: 1 / ATLAS_W, uvH: 1 };
+
   const imageBitmap = await createImageBitmap(offscreen);
-  return { imageBitmap, uvMap };
+  return { imageBitmap, uvMap, whiteUV };
 }

@@ -150,7 +150,8 @@ export class Renderer {
     this._bindGroupLayout = bindGroupLayout;
   }
 
-  async loadAtlas(imageBitmap) {
+  async loadAtlas(imageBitmap, whiteUV) {
+    this._whiteUV = whiteUV;
     const dev = this.device;
     const tex = dev.createTexture({
       size: [imageBitmap.width, imageBitmap.height],
@@ -183,7 +184,8 @@ export class Renderer {
 
   // Draw a colored rectangle sprite (solid color using white atlas pixel)
   drawRect(cx, cy, w, h, r, g, b, a = 1) {
-    this.drawSprite(cx, cy, w, h, 0, 0, 1, 1, r, g, b, a, 0);
+    const { uvX, uvY, uvW, uvH } = this._whiteUV ?? { uvX: 0, uvY: 0, uvW: 1, uvH: 1 };
+    this.drawSprite(cx, cy, w, h, uvX, uvY, uvW, uvH, r, g, b, a, 0);
   }
 
   // Full sprite draw
