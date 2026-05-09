@@ -16,8 +16,8 @@ export class Penguin {
     this.onGround      = true;
     this.jumpsLeft     = 2;
     this.facing        = 1;
-    this.hp            = 3;
-    this.maxHp         = 3;
+    this.hp            = 5;
+    this.maxHp         = 5;
     this.dead          = false;
     this._animTimer    = 0;
     this._hurtTimer    = 0;
@@ -60,7 +60,7 @@ export class Penguin {
     if (this._iFrames > 0 || this.dead) return false;
     this.hp = Math.max(0, this.hp - dmg);
     this._hurtTimer = 0.3;
-    this._iFrames   = 1.2;
+    this._iFrames   = 1.8;
     if (this.hp <= 0) this.dead = true;
     return true;
   }
