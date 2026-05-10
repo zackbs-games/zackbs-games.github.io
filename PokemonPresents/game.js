@@ -351,7 +351,14 @@ export class Game {
     // Presents
     for (const p of this.presents) {
       if (p.hitTest(mx, my)) {
-        if (p.open()) this.wildPokemon.push(new WildPokemon(pickPokemon(p.type), p.x, GROUND_Y - 100));
+        if (p.open()) {
+          this.wildPokemon.push(new WildPokemon(pickPokemon(p.type), p.x, GROUND_Y - 100));
+          if (p.type === 'legendary') {
+            this.masterBalls++;
+            this._showMsg('Legendary present! +1 Master Ball!', '#f39c12');
+            this._updateHUD();
+          }
+        }
         return;
       }
     }
@@ -382,8 +389,8 @@ export class Game {
       this.onCatch(id);
       if (this.totalCatches >= this._nextBallBonus) {
         this._nextBallBonus += 10;
-        this.normalBalls += 3;
-        this._showMsg(`${name} caught! +3 Poké Balls!`, '#f1c40f');
+        this.masterBalls++;
+        this._showMsg(`${name} caught! +1 Master Ball!`, '#f1c40f');
       }
       if (this.caught.size >= 151) this._state = 'win';
     }
