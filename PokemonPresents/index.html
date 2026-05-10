@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Pokémon Presents</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div id="rotate-msg">
+    <div class="rotate-icon">📱</div>
+    <p>Rotate your phone<br>to play!</p>
+  </div>
+
+  <a href="/" style="
+    position:fixed;top:12px;left:12px;
+    background:rgba(8,12,30,0.88);
+    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+    border:1px solid rgba(74,158,255,0.35);
+    color:#e2e8f0;font-family:'Segoe UI',system-ui,sans-serif;
+    font-size:0.78rem;font-weight:700;
+    padding:0.45rem 0.95rem;border-radius:8px;
+    text-decoration:none;z-index:9999;
+  ">← Back to Games</a>
+
+  <canvas id="game-canvas"></canvas>
+
+  <!-- Pokédex button -->
+  <button id="pdx-btn">📕 Pokédex</button>
+
+  <!-- HUD badges (outside canvas so they always read correctly) -->
+  <div id="hud-badges">
+    <div class="hud-pill">
+      <span class="hud-icon">🔮</span>
+      <span id="ball-count">10</span>
+    </div>
+    <div class="hud-pill">
+      <span id="caught-count">0 / 151</span>
+    </div>
+  </div>
+
+  <!-- Pokédex overlay -->
+  <div id="pdx-overlay">
+    <div id="pdx-panel">
+      <div id="pdx-header">
+        <span>📕 Pokédex</span>
+        <button id="pdx-close">✕</button>
+      </div>
+      <div id="pdx-grid"></div>
+    </div>
+  </div>
+
+  <script type="module" src="main.js"></script>
+</body>
+</html>

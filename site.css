@@ -175,6 +175,10 @@ body {
   background: linear-gradient(135deg, #0c3547 0%, #1a6b8a 45%, #2d8c5e 100%);
 }
 .banner-penguinfight .card-icon { animation-delay: 1.2s; }
+.banner-presents {
+  background: linear-gradient(135deg, #1a0a3e 0%, #6c2fa0 50%, #c0392b 100%);
+}
+.banner-presents .card-icon { animation-delay: 0.6s; }
 
 .banner-dinojump {
   background: linear-gradient(135deg, #431407 0%, #7c2d12 40%, #14532d 100%);
