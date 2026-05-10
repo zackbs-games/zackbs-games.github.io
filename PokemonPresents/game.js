@@ -357,6 +357,15 @@ export class Game {
             this.masterBalls++;
             this._showMsg('Legendary present! +1 Master Ball!', '#f39c12');
             this._updateHUD();
+          } else if (p.type === 'fancy' && Math.random() < 0.5) {
+            const n = 2 + Math.floor(Math.random() * 3); // 2–4 balls
+            this.normalBalls = Math.min(99, this.normalBalls + n);
+            this._showMsg(`Fancy present! +${n} Poké Balls!`, '#c39bd3');
+            this._updateHUD();
+          } else if (p.type === 'normal' && Math.random() < 0.3) {
+            this.normalBalls = Math.min(99, this.normalBalls + 2);
+            this._showMsg('Present bonus! +2 Poké Balls!', '#2ecc71');
+            this._updateHUD();
           }
         }
         return;
@@ -420,9 +429,9 @@ export class Game {
     if (this._state !== 'playing') return;
     if (this._msg) { this._msg.timer -= dt; if (this._msg.timer <= 0) this._msg = null; }
 
-    // Normal ball regen (1 every 20s, max 99)
+    // Normal ball regen (1 every 8s, max 99)
     this._regenTimer += dt;
-    if (this._regenTimer >= 20 && this.normalBalls < 99) {
+    if (this._regenTimer >= 8 && this.normalBalls < 99) {
       this._regenTimer = 0; this.normalBalls++; this._updateHUD();
     }
 
