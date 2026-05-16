@@ -1,15 +1,16 @@
-import { BY_RARITY } from './data.js';
-import { loadSprite, getSprite } from './spriteCache.js';
+import { BY_RARITY, POKEMON } from './data.js';
+import { loadSprite, getSprite, loadFusionSprite, getFusionSprite } from './spriteCache.js';
 
 export const CANVAS_W = 960;
 export const CANVAS_H = 480;
 const GROUND_Y = 390;
 
-const CATCH_RATE = { common: 0.70, rare: 0.35, legendary: 0.10 };
+const CATCH_RATE = { common: 0.70, rare: 0.35, legendary: 0.10, fusion: 0.08 };
 
 // HUD ball-selector button regions (bottom-left of canvas)
 const BTN_NORMAL = { x: 8,   y: CANVAS_H - 54, w: 210, h: 46 };
 const BTN_MASTER = { x: 224, y: CANVAS_H - 54, w: 210, h: 46 };
+const BTN_DREAM  = { x: 440, y: CANVAS_H - 54, w: 195, h: 46 };
 
 function hitRect(mx, my, r) {
   return mx >= r.x && mx <= r.x + r.w && my >= r.y && my <= r.y + r.h;
@@ -28,11 +29,25 @@ function pickPokemon(presentType) {
   return Math.random() < 0.1 ? rnd(BY_RARITY.rare) : rnd(BY_RARITY.common);
 }
 
+function fusionName(n1, n2) {
+  return n1.slice(0, Math.ceil(n1.length / 2)) + n2.slice(Math.floor(n2.length / 2));
+}
+
+const GEN1 = POKEMON.filter(p => p.id <= 151);
+
+function pickFusion() {
+  const p1 = GEN1[Math.floor(Math.random() * GEN1.length)];
+  let p2;
+  do { p2 = GEN1[Math.floor(Math.random() * GEN1.length)]; } while (p2.id === p1.id);
+  return { id: `fusion_${p1.id}_${p2.id}`, id1: p1.id, id2: p2.id, name: fusionName(p1.name, p2.name), rarity: 'fusion' };
+}
+
 // ── Present ──────────────────────────────────────────────────────────────────
 const PRESENT_DEFS = {
   normal:    { spawnInterval: 5,  w: 44, h: 40, body: '#d63031', lid: '#b71c1c', ribbon: '#f1c40f' },
   fancy:     { spawnInterval: 16, w: 44, h: 40, body: '#8e44ad', lid: '#6c3483', ribbon: '#f1c40f' },
   legendary: { spawnInterval: 60, w: 50, h: 46, body: '#e67e22', lid: '#d35400', ribbon: '#fff' },
+  mystery:   { spawnInterval: 90, w: 50, h: 46, body: '#1a1a2e', lid: '#0d0d1e', ribbon: '#fff' },
 };
 
 class Present {
@@ -93,6 +108,10 @@ class Present {
       ctx.fillStyle = ribbon;
       for (let i = 0; i < 6; i++) {
         const a = (i/6)*Math.PI*2 + this._t*5, r = 18 + this._t*50;
+        const col = this.type === 'mystery'
+          ? `hsl(${(i/6*360 + this._t*200) % 360},100%,65%)`
+          : ribbon;
+        ctx.fillStyle = col;
         ctx.fillRect(Math.cos(a)*r-3, Math.sin(a)*r-24-3, 6, 6);
       }
     } else {
@@ -111,13 +130,27 @@ class Present {
           ctx.fillRect(Math.cos(a)*(w/2+10)-3, Math.sin(a)*12-3, 6, 6);
         }
       }
+      if (this.type === 'mystery') {
+        // Animated rainbow orbiting dots
+        for (let i = 0; i < 6; i++) {
+          const a = (i/6)*Math.PI*2 + this._t * 2.5;
+          const hue = (i/6 * 360 + this._t * 150) % 360;
+          ctx.fillStyle = `hsl(${hue}, 100%, 65%)`;
+          ctx.beginPath(); ctx.arc(Math.cos(a)*(w/2+11), Math.sin(a)*14, 4, 0, Math.PI*2); ctx.fill();
+        }
+        // "?" symbol hinting at secret contents
+        ctx.fillStyle = 'rgba(255,255,255,0.9)';
+        ctx.font = `bold 16px "Courier New",monospace`;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('?', 0, 4);
+      }
     }
     ctx.restore();
   }
 }
 
 // ── WildPokemon ──────────────────────────────────────────────────────────────
-const WANDER_TIMER = { common: 10, rare: 10, legendary: 8 };
+const WANDER_TIMER = { common: 10, rare: 10, legendary: 8, fusion: 7 };
 
 class WildPokemon {
   constructor(data, x, y) {
@@ -125,14 +158,18 @@ class WildPokemon {
     this.x     = x; this.y = y;
     this.vx    = (Math.random() < 0.5 ? 1 : -1) * (35 + Math.random() * 45);
     this.vy    = (Math.random() - 0.5) * 30;
-    this.maxTimer = WANDER_TIMER[data.rarity];
+    this.maxTimer = WANDER_TIMER[data.rarity] ?? 10;
     this.timer    = this.maxTimer;
     this.state    = 'wandering';
     this._dir     = 0; this._anim = 0;
     this._catchT  = 0; this._escapeT = 0;
     this._failedAttempts = 0;
     this._shakeTimer     = 0;
-    loadSprite(data.id);
+    if (data.rarity === 'fusion') {
+      loadFusionSprite(data.id1, data.id2);
+    } else {
+      loadSprite(data.id);
+    }
   }
   hitTest(mx, my) {
     return this.state === 'wandering' && Math.hypot(mx - this.x, my - this.y) < 34;
@@ -174,7 +211,10 @@ class WildPokemon {
   }
   draw(ctx) {
     if (this.dead) return;
-    const sprite = getSprite(this.data.id);
+    const isFusion = this.data.rarity === 'fusion';
+    const sprite = isFusion
+      ? getFusionSprite(this.data.id1, this.data.id2)
+      : getSprite(this.data.id);
     const sz = 56;
     ctx.save();
     // Shake effect on failed catch
@@ -194,7 +234,9 @@ class WildPokemon {
       const frac = this.timer / this.maxTimer;
       ctx.beginPath();
       ctx.arc(0, 0, sz/2+10, -Math.PI/2, -Math.PI/2 + frac * Math.PI*2);
-      ctx.strokeStyle = frac > 0.5 ? '#2ecc71' : frac > 0.25 ? '#f39c12' : '#e74c3c';
+      ctx.strokeStyle = isFusion
+        ? `hsl(${(this._anim * 180) % 360},100%,65%)`
+        : frac > 0.5 ? '#2ecc71' : frac > 0.25 ? '#f39c12' : '#e74c3c';
       ctx.lineWidth = 3; ctx.stroke();
       // Failed attempts dots
       for (let i = 0; i < this._failedAttempts; i++) {
@@ -205,19 +247,21 @@ class WildPokemon {
     if (sprite) {
       ctx.drawImage(sprite, -sz/2, -sz/2, sz, sz);
     } else {
-      const fill = this.data.rarity === 'legendary' ? '#f39c12'
+      const fill = isFusion ? '#00bcd4'
+                 : this.data.rarity === 'legendary' ? '#f39c12'
                  : this.data.rarity === 'rare'      ? '#9b59b6' : '#3498db';
       ctx.beginPath(); ctx.arc(0, 0, sz/2, 0, Math.PI*2);
       ctx.fillStyle = fill; ctx.fill();
-      ctx.fillStyle = '#fff'; ctx.font = 'bold 11px "Courier New",monospace';
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 9px "Courier New",monospace';
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText(`#${this.data.id}`, 0, 0);
+      ctx.fillText(isFusion ? `${this.data.id1}+${this.data.id2}` : `#${this.data.id}`, 0, 0);
     }
     if (this.state === 'wandering') {
-      ctx.fillStyle = 'rgba(0,0,0,0.7)';
+      ctx.fillStyle = isFusion ? 'rgba(0,70,90,0.88)' : 'rgba(0,0,0,0.7)';
       const nw = this.data.name.length * 7 + 10;
       ctx.fillRect(-nw/2, sz/2+3, nw, 15);
-      ctx.fillStyle = '#fff'; ctx.font = '10px "Courier New",monospace';
+      ctx.fillStyle = isFusion ? '#00e5ff' : '#fff';
+      ctx.font = '10px "Courier New",monospace';
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillText(this.data.name, 0, sz/2+10);
     }
@@ -256,14 +300,20 @@ class Ball {
     ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI*2); ctx.fillStyle = '#fff'; ctx.fill();
     // Top half colour: red for normal, purple for master
     ctx.beginPath(); ctx.arc(0, 0, r, Math.PI, 0);
-    ctx.fillStyle = this.type === 'master' ? '#7d3c98' : '#c0392b'; ctx.fill();
+    ctx.fillStyle = this.type === 'dream' ? '#f1c40f' : this.type === 'master' ? '#7d3c98' : '#c0392b'; ctx.fill();
     ctx.strokeStyle = '#333'; ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(-r, 0); ctx.lineTo(r, 0); ctx.stroke();
-    ctx.beginPath(); ctx.arc(0, 0, 3.5, 0, Math.PI*2); ctx.fillStyle = '#ccc'; ctx.fill();
+    ctx.beginPath(); ctx.arc(0, 0, 3.5, 0, Math.PI*2);
+    ctx.fillStyle = this.type === 'dream' ? '#e67e22' : '#ccc'; ctx.fill();
     if (this.type === 'master') {
       ctx.fillStyle = '#fff'; ctx.font = 'bold 7px sans-serif';
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillText('M', 0, -4);
+    }
+    if (this.type === 'dream') {
+      ctx.fillStyle = '#333'; ctx.font = 'bold 7px sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('★', 0, -4);
     }
     ctx.restore();
   }
@@ -271,10 +321,11 @@ class Ball {
 
 // ── Game ─────────────────────────────────────────────────────────────────────
 export class Game {
-  constructor(canvas, onCatch) {
-    this.canvas  = canvas;
-    this.ctx     = canvas.getContext('2d');
-    this.onCatch = onCatch;
+  constructor(canvas, onCatch, onFusionCatch) {
+    this.canvas       = canvas;
+    this.ctx          = canvas.getContext('2d');
+    this.onCatch      = onCatch;
+    this.onFusionCatch = onFusionCatch ?? (() => {});
     canvas.width  = CANVAS_W;
     canvas.height = CANVAS_H;
     this._init();
@@ -299,11 +350,13 @@ export class Game {
     this.particles     = [];
     this.normalBalls   = 30;
     this.masterBalls   = 5;
-    this.activeBall    = 'normal'; // 'normal' | 'master'
+    this.dreamBalls    = 2;
+    this.activeBall    = 'normal'; // 'normal' | 'master' | 'dream'
     this.caught        = new Set();
+    this.caughtFusions = new Set();
     this.totalCatches  = 0;
     this._nextBallBonus = 10;
-    this._timers       = { normal: 0, fancy: 0, legendary: 0 };
+    this._timers       = { normal: 0, fancy: 0, legendary: 0, mystery: 0 };
     this._regenTimer   = 0;
     this._animTimer    = 0;
     this._msg          = null;
@@ -323,13 +376,18 @@ export class Game {
     // Ball selector buttons
     if (hitRect(mx, my, BTN_NORMAL)) { this.activeBall = 'normal';  return; }
     if (hitRect(mx, my, BTN_MASTER)) { this.activeBall = 'master';  return; }
+    if (hitRect(mx, my, BTN_DREAM))  { this.activeBall = 'dream';   return; }
 
     // Wild Pokémon (timer is running — priority)
     for (const wp of this.wildPokemon) {
       if (wp.state !== 'wandering' || !wp.hitTest(mx, my)) continue;
       if (this.balls.some(b => b.target === wp)) return; // already in flight
 
-      if (this.activeBall === 'master') {
+      if (this.activeBall === 'dream') {
+        if (this.dreamBalls <= 0) { this._showMsg('No Dream Balls left!', '#e74c3c'); return; }
+        this.dreamBalls--;
+        this.balls.push(new Ball(wp, 'dream', true));
+      } else if (this.activeBall === 'master') {
         if (this.masterBalls <= 0) { this._showMsg('No Master Balls left!', '#e74c3c'); return; }
         this.masterBalls--;
         this.balls.push(new Ball(wp, 'master', true));
@@ -352,21 +410,30 @@ export class Game {
     for (const p of this.presents) {
       if (p.hitTest(mx, my)) {
         if (p.open()) {
-          this.wildPokemon.push(new WildPokemon(pickPokemon(p.type), p.x, GROUND_Y - 100));
-          if (p.type === 'legendary') {
-            this.masterBalls++;
-            this._showMsg('Legendary present! +1 Master Ball!', '#f39c12');
+          let poke;
+          if (p.type === 'mystery') {
+            poke = pickFusion();
+            this.dreamBalls = Math.min(9, this.dreamBalls + 1);
+            this._showMsg('Mystery present! +1 Dream Ball! A fusion appeared!', '#f1c40f');
             this._updateHUD();
-          } else if (p.type === 'fancy' && Math.random() < 0.5) {
-            const n = 2 + Math.floor(Math.random() * 3); // 2–4 balls
-            this.normalBalls = Math.min(99, this.normalBalls + n);
-            this._showMsg(`Fancy present! +${n} Poké Balls!`, '#c39bd3');
-            this._updateHUD();
-          } else if (p.type === 'normal' && Math.random() < 0.3) {
-            this.normalBalls = Math.min(99, this.normalBalls + 2);
-            this._showMsg('Present bonus! +2 Poké Balls!', '#2ecc71');
-            this._updateHUD();
+          } else {
+            poke = pickPokemon(p.type);
+            if (p.type === 'legendary') {
+              this.masterBalls++;
+              this._showMsg('Legendary present! +1 Master Ball!', '#f39c12');
+              this._updateHUD();
+            } else if (p.type === 'fancy' && Math.random() < 0.5) {
+              const n = 2 + Math.floor(Math.random() * 3); // 2–4 balls
+              this.normalBalls = Math.min(99, this.normalBalls + n);
+              this._showMsg(`Fancy present! +${n} Poké Balls!`, '#c39bd3');
+              this._updateHUD();
+            } else if (p.type === 'normal' && Math.random() < 0.3) {
+              this.normalBalls = Math.min(99, this.normalBalls + 2);
+              this._showMsg('Present bonus! +2 Poké Balls!', '#2ecc71');
+              this._updateHUD();
+            }
           }
+          this.wildPokemon.push(new WildPokemon(poke, p.x, GROUND_Y - 100));
         }
         return;
       }
@@ -381,27 +448,51 @@ export class Game {
     const mb = document.getElementById('master-ball-count');
     if (mb) mb.textContent = this.masterBalls;
     const c = document.getElementById('caught-count');
-    if (c) c.textContent = `${this.caught.size} / 151`;
+    if (c) c.textContent = `${this.caught.size} / ${POKEMON.length}`;
+    const fc = document.getElementById('fusion-caught-count');
+    if (fc) fc.textContent = `${this.caughtFusions.size} fusions`;
   }
 
   _catch(wp) {
-    const { id, name, rarity } = wp.data;
-    const alreadyHad = this.caught.has(id);
-    this.caught.add(id);
-    this.totalCatches++;
-    if (alreadyHad) {
-      this._showMsg(`${name} already caught!`, '#e67e22');
-    } else {
-      const col = rarity === 'legendary' ? '#f39c12' : rarity === 'rare' ? '#c39bd3' : '#2ecc71';
-      this._showMsg(`${name} caught!`, col);
-      this._addSparkles(wp.x, wp.y, rarity);
-      this.onCatch(id);
-      if (this.totalCatches >= this._nextBallBonus) {
-        this._nextBallBonus += 10;
-        this.masterBalls++;
-        this._showMsg(`${name} caught! +1 Master Ball!`, '#f1c40f');
+    const isFusion = wp.data.rarity === 'fusion';
+
+    if (isFusion) {
+      const { id1, id2, name } = wp.data;
+      const key = `${id1}_${id2}`;
+      const alreadyHad = this.caughtFusions.has(key);
+      this.caughtFusions.add(key);
+      this.totalCatches++;
+      if (alreadyHad) {
+        this._showMsg(`${name} already caught!`, '#e67e22');
+      } else {
+        this._showMsg(`${name} fusion caught!`, '#00bcd4');
+        this._addSparkles(wp.x, wp.y, 'fusion');
+        this.onFusionCatch({ id1, id2, name });
+        if (this.totalCatches >= this._nextBallBonus) {
+          this._nextBallBonus += 10;
+          this.masterBalls++;
+          this._showMsg(`${name} caught! +1 Master Ball!`, '#f1c40f');
+        }
       }
-      if (this.caught.size >= 151) this._state = 'win';
+    } else {
+      const { id, name, rarity } = wp.data;
+      const alreadyHad = this.caught.has(id);
+      this.caught.add(id);
+      this.totalCatches++;
+      if (alreadyHad) {
+        this._showMsg(`${name} already caught!`, '#e67e22');
+      } else {
+        const col = rarity === 'legendary' ? '#f39c12' : rarity === 'rare' ? '#c39bd3' : '#2ecc71';
+        this._showMsg(`${name} caught!`, col);
+        this._addSparkles(wp.x, wp.y, rarity);
+        this.onCatch(id);
+        if (this.totalCatches >= this._nextBallBonus) {
+          this._nextBallBonus += 10;
+          this.masterBalls++;
+          this._showMsg(`${name} caught! +1 Master Ball!`, '#f1c40f');
+        }
+        if (this.caught.size >= POKEMON.length) this._state = 'win';
+      }
     }
     wp.catch();
     this._updateHUD();
@@ -415,11 +506,16 @@ export class Game {
   }
 
   _addSparkles(x, y, rarity) {
-    const n     = rarity === 'legendary' ? 22 : rarity === 'rare' ? 14 : 8;
-    const color = rarity === 'legendary' ? [1,0.85,0.1] : rarity === 'rare' ? [0.7,0.3,1] : [0.2,0.9,0.4];
+    const n = rarity === 'fusion' ? 35 : rarity === 'legendary' ? 22 : rarity === 'rare' ? 14 : 8;
+    const rainbowPalette = [
+      [1,0.25,0.25],[1,0.75,0],[0.25,1,0.4],[0,0.85,1],[0.75,0.25,1],[1,0.25,0.85]
+    ];
+    const solidColor = rarity === 'legendary' ? [1,0.85,0.1]
+                     : rarity === 'rare'      ? [0.7,0.3,1] : [0.2,0.9,0.4];
     for (let i = 0; i < n; i++) {
       const a = Math.random() * Math.PI * 2, s = 60 + Math.random() * 110;
       const life = 0.4 + Math.random() * 0.5;
+      const color = rarity === 'fusion' ? rainbowPalette[i % rainbowPalette.length] : solidColor;
       this.particles.push({ x, y, vx: Math.cos(a)*s, vy: Math.sin(a)*s-60, life, maxLife: life, size: 3+Math.random()*4, color });
     }
   }
@@ -435,7 +531,7 @@ export class Game {
       this._regenTimer = 0; this.normalBalls++; this._updateHUD();
     }
 
-    for (const type of ['normal', 'fancy', 'legendary']) {
+    for (const type of ['normal', 'fancy', 'legendary', 'mystery']) {
       this._timers[type] += dt;
       if (this._timers[type] >= PRESENT_DEFS[type].spawnInterval &&
           this.presents.filter(p => p.state !== 'done').length < 10) {
@@ -506,13 +602,18 @@ export class Game {
     const br = 10;
     ctx.beginPath(); ctx.arc(bx, by, br, 0, Math.PI*2); ctx.fillStyle = '#fff'; ctx.fill();
     ctx.beginPath(); ctx.arc(bx, by, br, Math.PI, 0);
-    ctx.fillStyle = label === 'Master' ? '#7d3c98' : '#c0392b'; ctx.fill();
+    ctx.fillStyle = label === 'Dream' ? '#f1c40f' : label === 'Master' ? '#7d3c98' : '#c0392b'; ctx.fill();
     ctx.strokeStyle = '#555'; ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(bx-br, by); ctx.lineTo(bx+br, by); ctx.stroke();
-    ctx.beginPath(); ctx.arc(bx, by, 3, 0, Math.PI*2); ctx.fillStyle = '#bbb'; ctx.fill();
+    ctx.beginPath(); ctx.arc(bx, by, 3, 0, Math.PI*2);
+    ctx.fillStyle = label === 'Dream' ? '#e67e22' : '#bbb'; ctx.fill();
     if (label === 'Master') {
       ctx.fillStyle = '#fff'; ctx.font = 'bold 6px sans-serif';
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('M', bx, by-3);
+    }
+    if (label === 'Dream') {
+      ctx.fillStyle = '#333'; ctx.font = 'bold 7px sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('★', bx, by-3);
     }
     ctx.fillStyle = active ? '#f1c40f' : '#ddd';
     ctx.font = `bold 13px "Courier New",monospace`;
@@ -524,13 +625,23 @@ export class Game {
     // Ball selector buttons
     this._drawBallBtn(ctx, BTN_NORMAL, 'Poké',   this.normalBalls, this.activeBall === 'normal');
     this._drawBallBtn(ctx, BTN_MASTER, 'Master', this.masterBalls, this.activeBall === 'master');
+    this._drawBallBtn(ctx, BTN_DREAM,  'Dream',  this.dreamBalls,  this.activeBall === 'dream');
+
+    // Fusion counter (bottom right)
+    const fusionHue = (this._animTimer * 120) % 360;
+    ctx.fillStyle = 'rgba(0,0,0,0.65)';
+    ctx.beginPath(); ctx.roundRect(CANVAS_W - 174, CANVAS_H - 54, 166, 46, 8); ctx.fill();
+    ctx.fillStyle = `hsl(${fusionHue},100%,65%)`;
+    ctx.font = 'bold 13px "Courier New",monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(`★ ${this.caughtFusions.size} fusions`, CANVAS_W - 91, CANVAS_H - 31);
 
     // Caught count
     ctx.fillStyle = 'rgba(0,0,0,0.65)';
     ctx.beginPath(); ctx.roundRect(CANVAS_W/2-72, 8, 144, 40, 8); ctx.fill();
     ctx.fillStyle = '#f1c40f'; ctx.font = 'bold 15px "Courier New",monospace';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(`${this.caught.size} / 151`, CANVAS_W/2, 28);
+    ctx.fillText(`${this.caught.size} / ${POKEMON.length}`, CANVAS_W/2, 28);
 
     // Message
     if (this._msg) {
@@ -559,8 +670,12 @@ export class Game {
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText('GOTTA CATCH EM ALL!', CANVAS_W/2, CANVAS_H/2-44);
     ctx.fillStyle = '#2ecc71'; ctx.font = 'bold 22px "Courier New",monospace';
-    ctx.fillText('All 151 Pokémon caught!', CANVAS_W/2, CANVAS_H/2+10);
+    ctx.fillText(`All ${POKEMON.length} Pokémon caught!`, CANVAS_W/2, CANVAS_H/2+10);
+    const fusionHue = (this._animTimer * 120) % 360;
+    ctx.fillStyle = `hsl(${fusionHue},100%,65%)`;
+    ctx.font = 'bold 16px "Courier New",monospace';
+    ctx.fillText(`★ ${this.caughtFusions.size} fusion${this.caughtFusions.size !== 1 ? 's' : ''} caught`, CANVAS_W/2, CANVAS_H/2+38);
     ctx.fillStyle = '#fff'; ctx.font = '17px "Courier New",monospace';
-    ctx.fillText('Tap to play again', CANVAS_W/2, CANVAS_H/2+52);
+    ctx.fillText('Tap to play again', CANVAS_W/2, CANVAS_H/2+66);
   }
 }

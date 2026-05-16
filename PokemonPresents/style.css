@@ -166,3 +166,49 @@ body {
   line-height: 1;
 }
 .pdx-slot.caught .pdx-num { color: #2ecc71; }
+
+/* Fusion section */
+#fusion-section {
+  border-top: 1px solid rgba(0,188,212,0.4);
+  flex-shrink: 0;
+}
+
+#fusion-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 18px;
+  color: #00bcd4;
+  font-size: 0.82rem;
+  font-weight: bold;
+  background: rgba(0,188,212,0.07);
+}
+
+#fusion-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+  gap: 4px;
+  padding: 8px 12px 12px;
+  overflow-y: auto;
+  min-height: 56px;
+  max-height: 160px;
+}
+
+.fusion-slot.caught {
+  background: rgba(0,188,212,0.15);
+  border-color: rgba(0,188,212,0.5);
+  width: 64px;
+  height: 66px;
+}
+.fusion-slot.caught:hover { background: rgba(0,188,212,0.28); }
+.fusion-slot .pdx-img { width: 44px; height: 44px; }
+
+.fusion-name {
+  font-size: 7px;
+  color: #00bcd4;
+  max-width: 60px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+}
